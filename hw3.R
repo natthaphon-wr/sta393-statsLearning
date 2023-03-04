@@ -73,8 +73,11 @@ model3 <- lm(Total_Revolving_Bal ~ Customer_Age)
 summary(model3)
 model4 <- lm(Total_Revolving_Bal ~ Months_on_book)
 summary(model4)
+
 model5 <- lm(Total_Revolving_Bal ~ Credit_Limit)
 summary(model5)
+
+
 
 # From using single linear regression, it's founded that Credit_Limit is only significant attribute
 # Next, I will try using polynomial regression with Credit_Limit

@@ -6,9 +6,10 @@ library(bestglm)
 
 
 # Import Data ------------------------------
-college=read.csv("College.csv",header=T,na.strings="?")
+college = read.csv("College.csv",header=T,na.strings="?")
 rownames(college) = college[,1]
 college=college[,-1]
+summary(college)
 head(college)
 dim(college)
 cor(college[sapply(college, is.numeric)])
@@ -76,6 +77,7 @@ dim(college)
 ### Get optimal feature -------------------
 cv.error.10 = 1:17
 for (i in 1:17){
+  print(college[,c(reg.summary$which[i,-1],TRUE)])
   glm.fit=glm(Grad.Rate~.,data=college[,c(reg.summary$which[i,-1],TRUE)])
   set.seed(500)
   cv.error.10[i]=cv.glm(college[,c(reg.summary$which[i,-1],TRUE)],glm.fit,K=10)$delta[1]
