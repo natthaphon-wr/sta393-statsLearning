@@ -82,7 +82,7 @@ col_hyb
 
 # Compare Final Model -------------------------------
 ## From HW3 Linear Regression ------------------------------
-model_hw3 <- lm(Total_Revolving_Bal ~ Credit_Limit)
+model_hw3 <- lm(Total_Revolving_Bal ~ Credit_Limit, data=BankChurners)
 summary(model_hw3)
 
 ## Hyb from CV ------------------------
