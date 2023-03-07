@@ -5,17 +5,15 @@ library(glmnet)
 College = read.csv("College.csv",header=T,na.strings="?")
 rownames(College) <- College[,1]
 College = College[,-1]
-# fix(College)
 colSums(is.na(College))
 dim(College)
 
-
-# Linear regression model ----------------------------
 x = model.matrix(Grad.Rate~.,College)[,-1]
 y = College$Grad.Rate
 dim(x)
 length(y)
 
+# Linear regression model ----------------------------
 ## Function ---------------------------------------
 # alpha = 1 -> lasso, alpha=0 -> ridge
 build_model <- function(alpha, x, y){
@@ -40,18 +38,25 @@ tune_lamb2 <- function(alpha, x, y, k, seq){
   return(bestlam)
 }
 
-## Lasso Regression -------------------------------------
-las_model = build_model(alpha=1, x, y)
-las_lambda = find_best_lamb(alpha=1, model=las_model, x=x, y=y, k=10)
-las_lambda
-las_lambda2 = tune_lamb2(alpha=1, x=x, y=y, k=10, seq=seq(0,1,0.01))
-
 ## Ridge Regression ------------------------------------
 rid_model = build_model(alpha=0, x, y)
 rid_lambda = find_best_lamb(alpha=0, model=rid_model, x=x, y=y, k=10)
 rid_lambda
 rid_lambda2 = tune_lamb2(alpha=0, x=x, y=y, k=10, seq=seq(2,3,0.01))
 rid_lambda2
+# Result: rid_lambda = 2.486466. Then tuning lambda between 2 to 3, rid_lambda2 = 2.74
+# The coefficient of each feature is showed below
+predict(rid_model, s=rid_lambda2, type="coefficients")[1:18,]
+
+## Lasso Regression -------------------------------------
+las_model = build_model(alpha=1, x, y)
+las_lambda = find_best_lamb(alpha=1, model=las_model, x=x, y=y, k=10)
+las_lambda
+las_lambda2 = tune_lamb2(alpha=1, x=x, y=y, k=10, seq=seq(0,1,0.01))
+las_lambda2
+# Result: las_lambda = 0.2858832. Then tuning lambda between 0 to 1, las_lambda2 = 0.31
+# The coefficient of each feature is showed below
+predict(las_model, s=las_lambda2, type="coefficients")[1:18,]
 
 
 ## Source Code -------------------------------------------
@@ -84,9 +89,6 @@ rid_lambda2
 # predict(lasso.mod, s=bestlam2, newx=x[1:10,])
 # 
 # plot(cv.out$lambda,cv.out$cvm,type = 'b', pch=20)
-
-
-
 
 
 
@@ -135,16 +137,14 @@ best_lamb_logit_acc <- function(alpha, x, y, k){
     pred = predict(model, s=grid, newx = x[folds==j,], type="class")
     cv.acc[j,]= colMeans(pred == y[folds==j])
   }
-  
   acc = colMeans(cv.acc)
   which.max(colMeans(cv.acc))
   acc[which.max(colMeans(cv.acc))]
   bestlam = grid[which.max(colMeans(cv.acc))]
-  
   plot(grid, acc*100, type='b')
-
   return(bestlam)
 }
+
 ## Ridge Regression -------------------------
 rid_model_logit = build_model_logit(alpha=0, x=x, y=y)
 
@@ -156,6 +156,9 @@ rid_lamb2_logit
 
 ### Based on accuracy -----------------
 rid_lamb_logit_acc = best_lamb_logit_acc(alpha=0, x=x, y=y, k=10)
+rid_lamb_logit_acc
+# Result: rid_lamb_logit_acc = 0.0463838
+# The coefficient of each feature is showed below
 predict(rid_model_logit, s=rid_lamb_logit_acc, type="coefficients")[1:18,]
 
 ## Lasso regression ----------------------------
@@ -163,6 +166,8 @@ las_model_logit = build_model_logit(alpha=1, x=x, y=y)
 ### Based on accuracy -----------------
 las_lamb_logit_acc = best_lamb_logit_acc(alpha=1, x=x, y=y, k=10)
 las_lamb_logit_acc
+# Result: las_lamb_logit_acc = 0.02915175
+# The coefficient of each feature is showed below
 predict(las_model_logit, s=las_lamb_logit_acc, type="coefficients")[1:18,]
 
 
