@@ -95,30 +95,31 @@ rmse_pca_manual
 
 
 ## Lasso Regression ---------------------
-# library(glmnet)
-# x = model.matrix(Grad.Rate~.,College)[,-1]
-# y = College$Grad.Rate
-# dim(x)
-# length(y)
-# 
-# # alpha = 1 -> lasso, alpha=0 -> ridge
-# build_model <- function(alpha, x, y){
-#   grid = 10^seq(10,-2, length=100)
-#   grid = c(grid,0)
-#   model = glmnet(x, y, alpha=alpha, lambda=grid)
-#   return(model)
-# }
-# 
-# find_best_lamb <- function(alpha, model, x, y, k){
-#   cv.out = cv.glmnet(x, y, alpha=alpha, nfolds=k)
-#   best_lamb = cv.out$lambda.min
-#   cv.error = cv.glm(x, y, cv.out, K=10)$delta[1]
-#   # print(cv.error)
-#   return(best_lamb)
-# }
-# 
-# las_model = build_model(alpha=1, x, y)
-# best_lamb = find_best_lamb(alpha=1, model=las_model, x=x, y=y, k=10)
+library(glmnet)
+x = model.matrix(Grad.Rate~.,College)[,-1]
+y = College$Grad.Rate
+dim(x)
+length(y)
+
+# alpha = 1 -> lasso, alpha=0 -> ridge
+build_model <- function(alpha, x, y){
+  grid = 10^seq(10,-2, length=100)
+  grid = c(grid,0)
+  model = glmnet(x, y, alpha=alpha, lambda=grid)
+  return(model)
+}
+
+find_best_lamb <- function(alpha, model, x, y, k){
+  cv.out = cv.glmnet(x, y, alpha=alpha, nfolds=k)
+  best_lamb = cv.out$lambda.min
+  mse_min <- cv.out$cvm[cv.out$lambda == cv.out$lambda.min]
+  return(list(best_lamb, mse_min))
+}
+
+las_model = build_model(alpha=1, x, y)
+result = find_best_lamb(alpha=1, model=las_model, x=x, y=y, k=10)
+best_lamb = result[[1]]
+rmse_lasso = sqrt(result[[2]])
 
 
 ## Subset Selection ------------------------------------
@@ -131,8 +132,32 @@ predict.regsubsets = function(object ,newdata ,id,...){
   mat[,xvars]%*%coefi
 }
 
+reg_cv <- function(nvmax, reg_fit, reg_summ){
+  cv.error = 1:nvmax
+  for (i in 1:nvmax){
+    glm.fit = glm(Grad.Rate~., data=College[, c(reg_summ$which[i,-1], TRUE)])
+    cv.error[i] = cv.glm(College[, c(reg_summ$which[i,-1],TRUE)], glm.fit,K=10)$delta[1]
+  }
+  return(min(cv.error))
+}
 
+regfit_best = regsubsets(Grad.Rate~., College, nvmax=17)
+regfit_fwd = regsubsets(Grad.Rate~., College, nvmax=17, method="forward")
+regfit_bwd = regsubsets(Grad.Rate~., College, nvmax=17, method="backward")
+regfit_hyb = regsubsets(Grad.Rate~., College, nvmax=17, method="seqrep")
+reg_summ_best = summary(regfit_best)
+reg_summ_fwd = summary(regfit_fwd)
+reg_summ_bwd = summary(regfit_bwd)
+reg_summ_hyb = summary(regfit_hyb)
 
+error_regbest = reg_cv(17, regfit_best, reg_summ_best)
+rmse_regbest = sqrt(error_regbest)
+error_regfwd = reg_cv(17, regfit_fwd, reg_summ_fwd)
+rmse_regfwd = sqrt(error_regfwd)
+error_regbwd = reg_cv(17, regfit_bwd, reg_summ_bwd)
+rmse_regbwd = sqrt(error_regbwd)
+error_reghyb = reg_cv(17, regfit_hyb, reg_summ_hyb)
+rmse_reghyb = sqrt(error_reghyb)
 
 
 ## Normal method --------------------
@@ -143,41 +168,26 @@ rmse_normal = sqrt(cv.glm(College, glm.fit.ori, K=10)$delta[1])
 rmse_normal
 
 
+# Conclusion and Discussion -------------------------
+sprintf("RMSE of Normal Method: %f", rmse_normal)
+sprintf("RMSE of Best Subset Selection Method: %f", rmse_regbest)
+sprintf("RMSE of Forward Stepwise Selection Method: %f", rmse_regfwd)
+sprintf("RMSE of Backward Stepwise Selection Method: %f", rmse_regbwd)
+sprintf("RMSE of Hybrid Stepwise Selection Method: %f", rmse_reghyb)
+sprintf("RMSE of Lasso Regression Method: %f", rmse_lasso)
+sprintf("RMSE of PCA with Onesigma Method: %f", rmse_pca_onesigma)
+sprintf("RMSE of PCA with Minimum Manual Method: %f", rmse_pca_manual)
+
+# From those result, the minimum RMSE is 12.8376 from "Backward Stepwise Selection".
+#   However, all RMSE value aren't different much. There isn't enough evidence to conclude
+#   that Backward Stepwise Selection is the best method for this problem. 
+#   (Maybe RMSE aren't significant different). 
+#   The main point from this experiment is that "There are various method for 
+#   independence variable selection, and they give (slightly) different result."
 
 
 
 
-
-
-
-
-## Lasso on PCA -------------------------------
-# grid=10^seq(10,-2, length=100)
-# grid = c(grid,0)
-# lasso.mod=glmnet(x,y,alpha=1,lambda=grid)  #alpha*L1(beta)+(1-alpha)*L2(beta)
-# College.pca = data.frame(cbind(pr.out$x,College$Grad.Rate))
-# colnames(College.pca)[ncol(College.pca)] = "GradRate"
-# x=model.matrix(GradRate~.,College.pca)[,-1]
-# head(x)
-# y=College.pca$GradRate
-# 
-# set.seed(ss)
-# cv.out2=cv.glmnet(x,y,alpha=1,nfolds=10)
-# names(cv.out2)
-# bestlam2 = cv.out2$lambda.min
-# bestlam2
-# 
-# plot(cv.out2$lambda,cv.out2$cvm,type = 'b')
-# 
-# #Try more lambda
-# 
-# set.seed(ss)
-# cv.out=cv.glmnet(x,y,alpha=1,lambda = seq(0.10,0.50,0.001),nfolds=10)
-# bestlam2 = cv.out$lambda.min
-# sqrt(min(cv.out$cvm))
-# predict(lasso.mod,s=bestlam2,type="coefficients")[1:18,]
-# 
-# plot(cv.out$lambda,sqrt(cv.out$cvm),type = 'b', pch=20)
 
 
 
