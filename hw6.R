@@ -4,7 +4,7 @@ library(readr)
 library(Matrix)
 library(glmnet)
 library(tibble)
-
+library(pls)
 
 # Load and Prepare Data ---------------------------------------
 BankChurners <- read_csv("BankChurners.csv")
@@ -33,6 +33,7 @@ summary(BankChurners2)
 # Train/Test Splitting --------------------------------------------
 # Using train/validate/test = 70/15/15
 # For trainset -> use both train and validate (k-fold) later
+set.seed(18)
 sample <- sample(c(TRUE, FALSE), nrow(BankChurners2), replace=TRUE, prob=c(0.7,0.3))
 train_set  <- BankChurners2[sample, ]
 test_set   <- BankChurners2[!sample, ]
@@ -90,13 +91,59 @@ bestacc
 predict(lasso_model, s=bestlamb, type="coefficients")
 
 ## Predict with test set ---------------------------------------
-pred_test <- predict(lasso_model, s=bestlamb, type="class", newx = x_test)
-conf_matrix <- table(pred_test, factor(y_test, levels=c("Attrited Customer", "Existing Customer")))
-conf_matrix
-acc_test = mean(pred_test == y_test)
-fscore_test = 2*conf_matrix[1,1] / (2*conf_matrix[1,1] + conf_matrix[1,2] + conf_matrix[2,1])
-acc_test
-fscore_test
+pred_las <- predict(lasso_model, s=bestlamb, type="class", newx = x_test)
+conf_matrix_las <- table(pred_las, factor(y_test, levels=c("Attrited Customer", "Existing Customer")))
+conf_matrix_las
+acc_las = mean(pred_las == y_test)
+fscore_las = 2*conf_matrix_las[1,1] / (2*conf_matrix_las[1,1] + conf_matrix_las[1,2] + conf_matrix_las[2,1])
+acc_las
+fscore_las
 
+
+# PCA ------------------------------------------------
+## PCA Train Components ----------------------------
+summary(train_set)
+pc <- prcomp(train_set[, -ncol(train_set)], scale.=TRUE)
+pc
+summary(pc)
+biplot(pc, scale=0)  
+pr.var = pc$sdev^2   
+pr.var
+pve = pr.var/sum(pr.var)
+pve
+cumpve = cumsum(pve)
+plot(cumpve)
+
+# From cumulative graph and summary(pc), I will choose 10 components because 
+#   they cover around 95% of data and increasing 4% from 9 components. 
+#   (PC10 to PC11 is increase around 1.5%)
+pc10 <- pc$x[,1:10]
+pc10_df <- as.data.frame(matrix(unlist(pc10), nrow = 7085))
+pc10_df$Attrition_Flag = train_set$Attrition_Flag
+pc10_df
+
+## PCA Test Components ----------------------------
+pc_test <- prcomp(test_set[, -ncol(test_set)], scale.=TRUE)
+pc_test <- pc_test$x[, 1:10]
+pc_test_df <- as.data.frame(matrix(unlist(pc_test), nrow = 3042))
+pc_test_df$Attrition_Flag = test_set$Attrition_Flag
+pc_test_df
+
+## Fit logistic regression model ---------------------
+pca_glmfit = glm(Attrition_Flag~., family = binomial, data=pc10_df)
+summary(pca_glmfit)
+
+## Predict with test data ---------------------------
+prob_pca = predict(pca_glmfit, type="response", newdata = pc_test_df)
+prob_pca
+pred_pca = ifelse(prob_pca > 0.5, "Attrited Customer", "Existing Customer")
+pred_pca
+
+conf_matrix_pca <- table(pred_pca, factor(y_test, levels=c("Attrited Customer", "Existing Customer")))
+conf_matrix_pca
+acc_pca = mean(pred_pca == y_test)
+fscore_pca = 2*conf_matrix_pca[1,1] / (2*conf_matrix_pca[1,1] + conf_matrix_pca[1,2] + conf_matrix_pca[2,1])
+acc_pca
+fscore_pca
 
 
