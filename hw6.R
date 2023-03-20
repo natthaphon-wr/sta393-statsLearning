@@ -31,10 +31,9 @@ summary(BankChurners2)
 
 
 # Train/Test Splitting --------------------------------------------
-# Using train/validate/test = 70/15/15
 # For trainset -> use both train and validate (k-fold) later
 set.seed(18)
-sample <- sample(c(TRUE, FALSE), nrow(BankChurners2), replace=TRUE, prob=c(0.7,0.3))
+sample <- sample(c(TRUE, FALSE), nrow(BankChurners2), replace=TRUE, prob=c(0.8,0.2))
 train_set  <- BankChurners2[sample, ]
 test_set   <- BankChurners2[!sample, ]
 
@@ -118,14 +117,14 @@ plot(cumpve)
 #   they cover around 95% of data and increasing 4% from 9 components. 
 #   (PC10 to PC11 is increase around 1.5%)
 pc10 <- pc$x[,1:10]
-pc10_df <- as.data.frame(matrix(unlist(pc10), nrow = 7085))
+pc10_df <- as.data.frame(matrix(unlist(pc10), nrow = 8100))
 pc10_df$Attrition_Flag = train_set$Attrition_Flag
 pc10_df
 
 ## PCA Test Components ----------------------------
 pc_test <- prcomp(test_set[, -ncol(test_set)], scale.=TRUE)
 pc_test <- pc_test$x[, 1:10]
-pc_test_df <- as.data.frame(matrix(unlist(pc_test), nrow = 3042))
+pc_test_df <- as.data.frame(matrix(unlist(pc_test), nrow = 2027))
 pc_test_df$Attrition_Flag = test_set$Attrition_Flag
 pc_test_df
 
