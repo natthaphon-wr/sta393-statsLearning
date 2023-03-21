@@ -3,16 +3,13 @@ library(datasets)
 library(tictoc)
 library(ISLR2)
 library(devtools)
-devtools::install_github("nwiroonsri/NCvalid",force=TRUE)
+# devtools::install_github("nwiroonsri/NCvalid",force=TRUE)
 library(NCvalid)
 
 # Important  Note ------------------------------ 
 # - remove CH and GD33 Index
 # - use STR, SF instead
 
-# Define Index -------------------------------
-ilist =  c('NCI','NCI2', 'PB', 'STR', 'DI','SC', 'SF', 'DB')
-ilist2 =  c('NCI(L)','NCI2(L)', 'PB(L)','STR(L)','DI(L)','SC(L)', 'SF(L)', 'DB(S)')
 
 # Iris Dataset --------------------------------------
 iris
@@ -262,30 +259,51 @@ plot(data.frame(nc[8]), ylab = ilist2[i], xlab = "number of clusters",type='b')
 points(data.frame(nc[8])[which.min(data.frame(nc[8])[,2]),1],min(data.frame(nc[8])[,2]),col='red',pch=20)
 
 
-# Function to use ---------------------------------------------
-measure_index <- function(nc){
-  par(mar = c(4, 4, 0.5, 0.5))
+
+
+# LAB: Define Index -------------------------------
+ilist =  c('NCI','NCI2', 'PB', 'STR', 'DI','SC', 'SF', 'DB')
+ilist2 =  c('NCI(L)','NCI2(L)', 'PB(L)','STR(L)','DI(L)','SC(L)', 'SF(L)', 'DB(S)')
+
+# LAB: Function ---------------------------------------------
+measure_index <- function(nc, title){
   par(mfrow=c(2,4))
   for (i in 1:8){
     plot(data.frame(nc[i]), ylab = ilist2[i], xlab = "number of clusters", type='b')
     points(data.frame(nc[i])[which.max(data.frame(nc[i])[,2]),1],max(data.frame(nc[i])[,2]), col='red', pch=20)
   }
+  mtext(title, side=3, line=-2, outer=TRUE)
 }
 
+elbow <- function(data, hc, title){
+  par(mfrow=c(1,1))
+  y=rep(0,10)
+  for (k in 1:10){
+    for (i in 1:k){
+      y[k] = y[k] + sum(as.dist(1-cor(t(data[cutree(hc, k)==i,]))))/sum(cutree(hc, k)==i)
+    }
+  }
+  plot(1:10, y, type="b", xlab="K", ylab="Total Within-cluster distance", main = title)
+}
 
 
 # LAB: cure-t0-2000n-2D Data -------------------------------
 data_cure = read.csv("cure-t0-2000n-2D.csv",header=T,na.strings="?")
-dim(dath)
+dim(data_cure)
 par(mfrow=c(1,1))
-plot(dath[, 1:2])
+plot(data_cure[, 1:2])
+# There are 3 groups from this graph.
 
-## Kmeans cluserting --------------------------
+
+## Kmeans clustering --------------------------
 km_cure3 = kmeans(data_cure, 3, nstart = 50)
 km_cure5 = kmeans(data_cure, 5, nstart = 50)
 
 nc_cure = Ovalid(data_cure, kmax=10, kmin=2, method = 'kmeans', indexlist = ilist)
-measure_index(nc_cure)
+measure_index(nc_cure, "Data cure: K-Means")
+
+# There are several result. However, DB index give that no. of optimal groups are 3. 
+
 
 ## Hierarchical Clustering with correlation ---------------------------
 dissim <- as.dist(1-cor(t(data_cure)))
@@ -298,33 +316,56 @@ plot(hc_cure_complete, main="Complete Linkage", xlab="", sub="", cex=.9)
 plot(hc_cure_average, main="Average Linkage", xlab="", sub="", cex=.9)
 plot(hc_cure_single, main="Single Linkage", xlab="", sub="", cex=.9)
 
-colMeans(data_cure[cutree(hc_cure_complete, 3)==1,]) 
-colMeans(data_cure[cutree(hc_cure_complete, 3)==2,]) 
-colMeans(data_cure[cutree(hc_cure_complete, 3)==3,]) 
+### Elbow -----------------------------
+elbow(data_cure, hc_cure_complete, "Data cure: Hierarchical complete linkage")
+elbow(data_cure, hc_cure_average, "Data cure: Hierarchical average linkage")
+elbow(data_cure, hc_cure_single, "Data cure: Hierarchical single linkage")
+#No. of optimal groups are 2.
 
-par(mfrow=c(1,1))
-y=rep(0,10)
-for (k in 1:10){
-  for (i in 1:k){
-    y[k] = y[k] + sum(as.dist(1-cor(t(data_cure[cutree(hc_cure_complete, k)==i,]))))/sum(cutree(hc_cure_complete, k)==i)
-  }
-}
-plot(1:10, y, type="b", xlab="K", ylab="Total Within-cluster distance")
-
-for (k in 1:8){
-  print(sum(cutree(hc_cure_complete, 8)==k))
-}
-
+### Index ---------------------------
 nc_cure_comp = Ovalid(data_cure, kmax=10, kmin=2, method = 'hclust_complete', indexlist=ilist)
 nc_cure_avg = Ovalid(data_cure, kmax=10, kmin=2, method = 'hclust_average', indexlist=ilist)
 nc_cure_single = Ovalid(data_cure, kmax=10, kmin=2, method = 'hclust_single', indexlist=ilist)
-measure_index(nc_cure_comp)
-measure_index(nc_cure_avg)
-measure_index(nc_cure_single)
-
+measure_index(nc_cure_comp, "Data cure: Hierarchical complete linkage")
+measure_index(nc_cure_avg, "Data cure: Hierarchical average linkage")
+measure_index(nc_cure_single, "Data cure: Hierarchical single linkage")
+# Using single linkage can get no. of optimal  groups that are 3 in NCI, NCI2, PB, STR, DI, and SC.  
 
 # LAB: wine Data ------------------------------------------
 data_wine = read.csv("wine.csv",header=T,na.strings="?")
+dim(data_wine)
+summary(data_wine)
+# There are 3 classes of wine.
 
+## Kmeans clustering ------------------------
+nc_wine = Ovalid(data_wine, kmax=10, kmin=2, method = 'kmeans', indexlist = ilist)
+measure_index(nc_wine, "Data wine: K-Means")
+# There are several result, and no correct answer.
 
+## Hierarchical Clustering with correlation ---------------------------
+dissim_wine <- as.dist(1-cor(t(data_wine)))
+hc_wine_complete = hclust(dissim_wine, method="complete")
+hc_wine_average = hclust(dissim_wine, method="average")
+hc_wine_single = hclust(dissim_wine, method="single")
 
+par(mfrow=c(1,3))
+plot(hc_wine_complete, main="Complete Linkage", xlab="", sub="", cex=.9)
+plot(hc_wine_average, main="Average Linkage", xlab="", sub="", cex=.9)
+plot(hc_wine_single, main="Single Linkage", xlab="", sub="", cex=.9)
+
+### Elbow -----------------------------
+elbow(data_wine, hc_wine_complete, "Data wine: Hierarchical complete linkage")
+elbow(data_wine, hc_wine_average, "Data wine: Hierarchical average linkage")
+elbow(data_wine, hc_wine_single, "Data wine: Hierarchical single linkage")
+#From elbow, no. of optimal groups are 2.
+
+### Index ---------------------------
+nc_wine_comp = Ovalid(data_wine, kmax=10, kmin=2, method = 'hclust_complete', indexlist=ilist)
+nc_wine_avg = Ovalid(data_wine, kmax=10, kmin=2, method = 'hclust_average', indexlist=ilist)
+nc_wine_single = Ovalid(data_wine, kmax=10, kmin=2, method = 'hclust_single', indexlist=ilist)
+measure_index(nc_wine_comp, "Data wine: Hierarchical complete linkage")
+measure_index(nc_wine_avg, "Data wine: Hierarchical average linkage")
+measure_index(nc_wine_single, "Data wine: Hierarchical single linkage")
+# The linkage and index that give no. of groups is 3 are following:
+#   1, Single linkage with DB index
+#   2. Average linkage with DI index
