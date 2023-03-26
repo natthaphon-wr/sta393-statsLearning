@@ -4,6 +4,8 @@ library(NCvalid)
 library(dplyr)
 library(factoextra)
 library(readr)
+library(dendextend)
+library(ggplot2)
 
 # Define Index -------------------------------
 ilist =  c('NCI','NCI2', 'PB', 'STR', 'DI','SC', 'SF', 'DB')
@@ -36,7 +38,6 @@ elbow <- function(data, hc, title){
 ## Read and explore data ---------------------
 artData <- read.arff('2d-3c-no123.arff')
 plot(artData$a0, artData$a1, col=artData$class)
-legend(x="topleft", legend=unique(artData$class), pch=1, col=as.vector(unique(artData$class)))
 summary(artData)
 
 artData <- artData %>% mutate_at(c('class'), as.numeric)
@@ -69,9 +70,9 @@ hc_eucli_average = hclust(disEuc, method="average")
 hc_eucli_single = hclust(disEuc, method="single")
 
 par(mfrow=c(1,3))
-plot(hc_eucli_complete, main="Complete Linkage", xlab="", sub="", cex=.9)
-plot(hc_eucli_average, main="Average Linkage", xlab="", sub="", cex=.9)
-plot(hc_eucli_single, main="Single Linkage", xlab="", sub="", cex=.9)
+plot(hc_eucli_complete, main="Complete Linkage", check = TRUE)
+plot(hc_eucli_average, main="Average Linkage", check = TRUE)
+plot(hc_eucli_single, main="Single Linkage", check = TRUE)
 
 # Those trees are a lot unbalanced.
 
@@ -81,35 +82,10 @@ elbow(Wholesale, hc_eucli_complete, "Euclidean Distance: Hierarchical complete l
 elbow(Wholesale, hc_eucli_average, "Euclidean Distance: Hierarchical average linkage")
 elbow(Wholesale, hc_eucli_single, "Euclidean Distance: Hierarchical single linkage")
 #complete/avg/single = 6/10/6?
-tab = table(cutree(hc_eucli_complete, 6))
-
 table(cutree(hc_eucli_complete, 6))
 table(cutree(hc_eucli_average, 10))
 table(cutree(hc_eucli_single, 6))
 # It's showed that there are many groups (almost entirely) that have 1-2 members. 
-
-### Index ----------------------------
-nc_eucli_comp = Ovalid(Wholesale, kmax=10, kmin=2, method = 'hclust_complete', indexlist=ilist)
-nc_eucli_avg = Ovalid(Wholesale, kmax=10, kmin=2, method = 'hclust_average', indexlist=ilist)
-nc_eucli_single = Ovalid(Wholesale, kmax=10, kmin=2, method = 'hclust_single', indexlist=ilist)
-measure_index(nc_eucli_comp, "Euclidean Distance: Hierarchical complete linkage")
-measure_index(nc_eucli_avg, "Euclidean Distance: Hierarchical average linkage")
-measure_index(nc_eucli_single, "Euclidean Distance: Hierarchical single linkage")
-# It's showed different answers in each index (2-9) and each linkage.
-
-### Summary ------------------------------------
-# When using no.of groups that are more than 6, there are many groups that have 1-2 members.
-#   There is only 2-3 groups that have appropriate number (actually can call group).
-# So, I will use n = 3,4,5
-for (i in 3:5){
-  print("complete linkage")
-  print(table(cutree(hc_eucli_complete, i)))
-  print("average linkage")
-  print(table(cutree(hc_eucli_average, i)))
-  print("single linkage")
-  print(table(cutree(hc_eucli_single, i)))
-}
-#Found same problem too.
 
 
 ## Use Correlation Dissimilarity -----------------------------------
@@ -119,12 +95,42 @@ hc_corr_average = hclust(disCorr, method="average")
 hc_corr_single = hclust(disCorr, method="single")
 
 par(mfrow=c(1,3))
-plot(hc_corr_complete, main="Complete Linkage", xlab="", sub="", cex=.9)
-plot(hc_corr_average, main="Average Linkage", xlab="", sub="", cex=.9)
-plot(hc_corr_single, main="Single Linkage", xlab="", sub="", cex=.9)
+plot(hc_corr_complete, main="Complete Linkage", check = TRUE)
+plot(hc_corr_average, main="Average Linkage", check = TRUE)
+plot(hc_corr_single, main="Single Linkage", check = TRUE)
+#It's more balance than euclidean distance.
 
-#It's better than euclidean distance.
+### Elbow -----------------------------
+elbow(Wholesale, hc_corr_complete, "Correlation Dissimilarity: Hierarchical complete linkage")
+elbow(Wholesale, hc_corr_average, "Correlation Dissimilarity: Hierarchical average linkage")
+elbow(Wholesale, hc_corr_single, "Correlation Dissimilarity: Hierarchical single linkage")
+#complete/avg/single = 3/3/8?
+table(cutree(hc_corr_complete, 3))
+table(cutree(hc_corr_average, 3))
+table(cutree(hc_corr_single, 8))
+# From complete and average linkage that number of group are 3, there are 2 large groups and
+#   a small group. (average has 1 member for a small group)
 
+
+# Summary -------------------------------------------
+# From Elbow method for selecting optimal number of cluster with using different distance and linkage
+#   the most optimal/reasonable that I think is the model using correlation dissimilarity with complete linkage,
+#   and number of cluster are 3.
+# Explore the result of this model.
+
+cut_best <- cutree(hc_corr_complete, 3)
+plot(hc_corr_complete, main="Complete Linkage", check = TRUE)
+rect.hclust(hc_corr_complete , k = 3, border = 2:6)
+abline(h = 3, col = 'red')
+
+corrComp_dend_obj <- as.dendrogram(hc_corr_complete)
+comp_col_dend <- color_branches(corrComp_dend_obj, h=1.5)
+plot(comp_col_dend)
+
+Wholesale_cluster <- mutate(Wholesale, cluster = cut_best)
+count(Wholesale_cluster, cluster)
+
+## Using PCA for visualize
 
 
 
