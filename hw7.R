@@ -51,17 +51,26 @@ kms_artData$cluster
 fviz_cluster(kms_artData, data=artData[,-3], geom = "point")
 
 ### Using indexes for select no. of class ----------------
-nc_artData = Ovalid(artData, kmax=10, kmin=2, method = 'kmeans', indexlist = ilist)
+nc_artData = Ovalid(artData[, -3], kmax=10, kmin=2, method = 'kmeans', indexlist = ilist)
 measure_index(nc_artData, "Artificial Data: K-Means")
 
 
 # Wholesale Dataset ------------------------------------------
 ## Read and explore data ---------------------
-# I will not scale data for considering price different between goods.
 Wholesale <- read_csv("Wholesale.csv")
 Wholesale <- Wholesale %>% select(-c('Channel', 'Region'))
 summary(Wholesale)
-# I will use hierarchical clustering. 
+
+par(mfrow=c(2,3))
+plot(1:dim(Wholesale)[1], Wholesale$Fresh, xlab="Data", ylab="Fresh")
+plot(1:dim(Wholesale)[1], Wholesale$Milk, xlab="Data", ylab="Milk")
+plot(1:dim(Wholesale)[1], Wholesale$Grocery, xlab="Data", ylab="Grocery")
+plot(1:dim(Wholesale)[1], Wholesale$Frozen, xlab="Data", ylab="Frozen")
+plot(1:dim(Wholesale)[1], Wholesale$Detergents_Paper, xlab="Data", ylab="Detergents_Paper")
+plot(1:dim(Wholesale)[1], Wholesale$Delicassen, xlab="Data", ylab="Delicassen")
+
+# I will use hierarchical clustering, and
+#   will not scale data for considering price different between goods.
 
 ## Use Euclidean Distance -----------------------------------
 disEuc <- dist(Wholesale)
@@ -69,6 +78,7 @@ hc_eucli_complete = hclust(disEuc, method="complete")
 hc_eucli_average = hclust(disEuc, method="average")
 hc_eucli_single = hclust(disEuc, method="single")
 
+# Sometimes, "Session fatal error" happen when plot these graph.
 par(mfrow=c(1,3))
 plot(hc_eucli_complete, main="Complete Linkage", check = TRUE)
 plot(hc_eucli_average, main="Average Linkage", check = TRUE)
@@ -94,6 +104,7 @@ hc_corr_complete = hclust(disCorr, method="complete")
 hc_corr_average = hclust(disCorr, method="average")
 hc_corr_single = hclust(disCorr, method="single")
 
+# Sometimes, "Session fatal error" happen when plot these graph.
 par(mfrow=c(1,3))
 plot(hc_corr_complete, main="Complete Linkage", check = TRUE)
 plot(hc_corr_average, main="Average Linkage", check = TRUE)
@@ -113,8 +124,9 @@ table(cutree(hc_corr_single, 8))
 
 
 # Summary -------------------------------------------
-# From Elbow method for selecting optimal number of cluster with using different distance and linkage
-#   the most optimal/reasonable that I think is the model using correlation dissimilarity with complete linkage,
+# From Elbow method for selecting optimal number of cluster with using 
+#   distance and linkage, the most optimal/reasonable that I think is 
+#   the model using correlation dissimilarity with complete linkage,
 #   and number of cluster are 3.
 # Explore the result of this model.
 
@@ -125,12 +137,35 @@ abline(h = 3, col = 'red')
 
 corrComp_dend_obj <- as.dendrogram(hc_corr_complete)
 comp_col_dend <- color_branches(corrComp_dend_obj, h=1.5)
-plot(comp_col_dend)
+plot(comp_col_dend, main="Best Model with Cuttree")
 
 Wholesale_cluster <- mutate(Wholesale, cluster = cut_best)
 count(Wholesale_cluster, cluster)
+Wholesale_cluster$cluster <- as.factor(Wholesale_cluster$cluster)
+summary(Wholesale_cluster)
 
-## Using PCA for visualize
-
-
+ggplot(Wholesale_cluster, aes(x=1:dim(Wholesale_cluster)[1], y=Fresh, color=cluster)) + 
+  geom_point() +
+  xlab("Data") +
+  ggtitle("Wholesale Data with Clustering from Model")
+ggplot(Wholesale_cluster, aes(x=1:dim(Wholesale_cluster)[1], y=Milk, color=cluster)) + 
+  geom_point() +
+  xlab("Data") +
+  ggtitle("Wholesale Data with Clustering from Model")
+ggplot(Wholesale_cluster, aes(x=1:dim(Wholesale_cluster)[1], y=Grocery, color=cluster)) + 
+  geom_point() +
+  xlab("Data") +
+  ggtitle("Wholesale Data with Clustering from Model")
+ggplot(Wholesale_cluster, aes(x=1:dim(Wholesale_cluster)[1], y=Frozen, color=cluster)) + 
+  geom_point() +
+  xlab("Data") +
+  ggtitle("Wholesale Data with Clustering from Model")
+ggplot(Wholesale_cluster, aes(x=1:dim(Wholesale_cluster)[1], y=Detergents_Paper, color=cluster)) + 
+  geom_point() +
+  xlab("Data") +
+  ggtitle("Wholesale Data with Clustering from Model")
+ggplot(Wholesale_cluster, aes(x=1:dim(Wholesale_cluster)[1], y=Delicassen, color=cluster)) + 
+  geom_point() +
+  xlab("Data") +
+  ggtitle("Wholesale Data with Clustering from Model")
 
