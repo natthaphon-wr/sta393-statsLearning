@@ -13,24 +13,24 @@ n_trans <- length(unique(bread_basket$Transaction))
 # There are 9465 transaction.
 # Association rule isn't consider quantity in each items.
 
+## Pivot Table and Clean Data --------------------------------
 pivot_data <- bread_basket %>%
   mutate(count = 1) %>% 
   distinct() %>% 
-  pivot_wider(names_from="Item", values_from="count", values_fill = 0)
+  pivot_wider(names_from="Item", values_from="count", values_fill = 0) %>% 
+  mutate_if(is.character, as.factor) %>% 
+  mutate_if(is.numeric, as.logical) %>% 
+  select(-c(date_time, Transaction))
 
-sum(is.nan(as.matrix(pivot_data)))
-# Data is already for using. (no NaN)
+summary(pivot_data)
+
+## Convert to Transaction Data -----------------------------
+bb_trans <- transactions(pivot_data)
+summary(bb_trans)
+# It shows that 9465 rows (transactions), and 100 columns (items).
+# It's correct, 100 columns = 94 goods + 2 weekday_weekend + 4 period_day
+
 
 # Explore Data ----------------------------------------------------------------
-## Count number of item in each transaction ----------------------
-pivot_data[,ncol(pivot_data)]
-pivot_data_count <- pivot_data %>% 
-  mutate(nitems = rowSums(across(Bread:`Tacos/Fajita`)))
-pivot_data_count$nitems
-hist(pivot_data_count$nitems, main="Number of Items per Transaction", xlab="#Items")
-
-## Frequent Items -----------------------------------------------
-# transactions <- as(pivot_data, "transactions")
-# item_frequencies <- itemFrequency(transactions, type="a")
-# itemFrequencyPlot(item_frequencies, topN = 25)
+itemFrequencyPlot(bb_trans, topN = 20)
 
