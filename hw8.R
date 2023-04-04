@@ -9,7 +9,7 @@ library(arules)
 # Data Preparation ------------------------------------------------------------
 bread_basket <- read_csv("bread+basket.csv")
 summary(bread_basket)
-n_trans <- length(unique(bread_basket$Transaction))
+n_trans <- length(unique(bread_basket$Transaction)) 
 # There are 9465 transaction.
 # Association rule isn't consider quantity in each items.
 
@@ -29,7 +29,6 @@ pivot_data <- pivot_weekday %>%
   mutate(count = 1) %>% 
   distinct() %>% 
   pivot_wider(names_from="Item", values_from="count", values_fill = 0) %>% 
-  mutate_if(is.character, as.factor) %>% 
   mutate_if(is.numeric, as.logical) %>% 
   select(-c(date_time, Transaction))
 summary(pivot_data)
@@ -62,9 +61,11 @@ itemFrequencyPlot(bb_trans, topN = 30, type='absolute')
 rule1 <- apriori(bb_trans, parameter=list(minlen=1, maxlen=5, support=0.001, confidence=0.5))
 rule2 <- apriori(bb_trans, parameter=list(minlen=1, maxlen=5, support=0.01, confidence=0.5))
 rule3 <- apriori(bb_trans, parameter=list(minlen=1, maxlen=5, support=0.001, confidence=0))
+rule4 <- apriori(bb_trans, parameter=list(minlen=1, maxlen=5, support=0.01, confidence=0))
 l1 = length(rule1)
 l2 = length(rule2)
 l3 = length(rule3)
+l4 = length(rule4)
 
 # Top Support ----------------------------------------------------------
 inspect(head(sort(rule1, by ="support"), 50))
@@ -133,6 +134,7 @@ inspect(head(sort(rule3, by ="support", decreasing = FALSE), 50))
 inspect(head(sort(rule3, by ="confidence", decreasing = FALSE), 50))
 # It show rare cases, so it's tricky to interpret. Moreover, some rare cases are 
 #   the products that explained in previous parts.
+inspect(head(sort(rule4, by ="confidence", decreasing = FALSE), 50))
 
 
 # Bottom Lift ------------------------------------------------------------------
@@ -163,7 +165,8 @@ inspect(head(sort(rule3, by ="lift", decreasing = FALSE), 50))
 #      is quite high, more than 0.7. (37th-39th)  
 #   3. According to result of top lift using rule2, lift of buying toast and coffee
 #      is decent, more than 1.5. (31th-35th) 
-
+# Moreover, this idea can be applied to another food instead Toast such as Baguette,
+#   Scone, and Muffin.
 
 
 
