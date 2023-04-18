@@ -139,13 +139,13 @@ tree.pred = factor(tree.pred,levels=c("Low","High"),ordered =TRUE)
 # tree.pred = predict(tree.college,college2.test,type="class")
 
 table1 = table(tree.pred,Grad.Rate.test)
-acc = (table1[1,1]+table1[2,2])/sum(table1)
+acc_base = (table1[1,1]+table1[2,2])/sum(table1)
 fp = table1[2,1]/(table1[1,1]+table1[2,1])
 fn = table1[1,2]/(table1[1,2]+table1[2,2])
 tp = table1[2,2]/(table1[1,2]+table1[2,2])
 tn = table1[1,1]/(table1[1,1]+table1[2,1])
 f1 = 2*tp/(2*tp+fp+fn)
-acc
+acc_base
 tp
 tn
 f1
@@ -193,13 +193,13 @@ plot(prune.college)
 text(prune.college ,pretty=0)
 tree.pred=predict(prune.college,college2.test,type="class")
 table1 = table(tree.pred,Grad.Rate.test)
-acc=(table1[1,1]+table1[2,2])/sum(table1)
+acc_prune4 = (table1[1,1]+table1[2,2])/sum(table1)
 fp = table1[2,1]/(table1[1,1]+table1[2,1])
 fn = table1[1,2]/(table1[1,2]+table1[2,2])
 tp = table1[2,2]/(table1[1,2]+table1[2,2])
 tn = table1[1,1]/(table1[1,1]+table1[2,1])
 f1 = 2*tp/(2*tp+fp+fn)
-acc
+acc_prune4
 tp
 tn
 f1
@@ -209,13 +209,13 @@ rf.college = randomForest(Grad.Rate~., data=college2 ,subset=train ,mtry=4, ntre
 rf.pred=predict(rf.college,college2.test,type="class")
 
 table1 = table(rf.pred,Grad.Rate.test)
-acc=(table1[1,1]+table1[2,2])/sum(table1)
+acc_rf =(table1[1,1]+table1[2,2])/sum(table1)
 fp = table1[2,1]/(table1[1,1]+table1[2,1])
 fn = table1[1,2]/(table1[1,2]+table1[2,2])
 tp = table1[2,2]/(table1[1,2]+table1[2,2])
 tn = table1[1,1]/(table1[1,1]+table1[2,1])
 f1 = 2*tp/(2*tp+fp+fn)
-acc
+acc_rf
 tp
 tn
 f1
@@ -281,7 +281,7 @@ for (m in 2:16){
     rf.college = randomForest(Grad.Rate~.,data=college2[folds!=j,], mtry=m, ntree=100, importance =TRUE)
     rf.prob = predict(rf.college, college2[folds==j,], type="prob")
     rf.pred = rep('Low', nrow(rf.prob))
-    rf.pred[rf.prob[,2]>0.7] = 'High'
+    rf.pred[rf.prob[,2]>0.6] = 'High'
     rf.pred = factor(rf.pred, levels=c("Low","High"), ordered =TRUE)
     cvv[j] = mean(as.numeric(rf.pred) == as.numeric(college2$Grad.Rate[folds==j]))
   }
@@ -293,5 +293,9 @@ acc_rfcut_k <- max(cv.acc.rf)
 npred_rfcut_k
 acc_rfcut_k
 
+## Summary ----------------------------------------------------
+# The accuracy from pruning tree with k-fold is approximate 0.92
+# The accuracy from RF with 0.6 cutoff threshold is approximate 0.87
 
-
+# It's interested that accuracy from pruning tree is better than RF. 
+# (The result is same as training error without k-fold CV)
