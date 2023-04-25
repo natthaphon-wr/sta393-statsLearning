@@ -51,15 +51,27 @@ sapply(prep_data, function(x) n_distinct(x))
 
 ### Convert to numerical variables ----------------------------
 prep_data$PlayerMarketValue <- gsub("million", "", prep_data$PlayerMarketValue)
-prep_data$PlayerMarketValue  <- gsub("€", "", prep_market)
+prep_data$PlayerMarketValue  <- gsub("€", "", prep_data$PlayerMarketValue)
 prep_data <- prep_data %>% mutate_at(vars("PlayerMarketValue"), as.numeric)
 
 ### Convert to categorical variables ----------------------------
-prep_data <- prep_data %>% mutate_at(vars(-"RecordID", -"PlayerName", "PlayerMarketBValue"), as.factor)
+prep_data <- prep_data %>% mutate_at(vars(-"RecordID", -"PlayerName", -"PlayerMarketValue"), as.factor)
+
+### Reorder PlayerName column ------------------------------------
+prep_data <- prep_data %>% relocate(PlayerName, .after = RecordID)
+
+## Conclude data preparation -------------------------------------
+summary(prep_data)
+sapply(prep_data, function(x) n_distinct(x))
 
 
+# Data Exploration -------------------------------------------------------------
 
-
+## League/Country ----------------------------------
+table(prep_data$`League/Country`)
+# There is a issue that there are "Champions League" and "Europa League", while 
+#   most data are actually league. This problem can't clean more. 
+#   Must noted before using.
 
 
 
