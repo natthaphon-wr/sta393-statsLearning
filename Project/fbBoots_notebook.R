@@ -4,7 +4,7 @@ library(dplyr)
 library(tidyr)
 library(cluster)
 library(readr)
-
+library(ggplot2)
 
 # Data Preparation -------------------------------------------------------------
 fbBootDB <- read_csv('footballbootsdb.csv')
@@ -25,7 +25,7 @@ colSums(is.na(fbBootDB))
 # 11. PlayerName: The name of the player who wore the football boots.
 # 12. PlayerPosition: The position of the player on the pitch.
 # 13. PlayerNationality: The nationality of the player who wore the football boots.
-# 14. PlayerMarketValue: The market value of the player who wore the football boots.
+# 14. PlayerMarketValue: The market value of the player who wore the football boots. (million euro)
 
 ## Delete 4 last columns ----------------------------------------
 prep_data <- fbBootDB[,1:14]
@@ -66,12 +66,44 @@ sapply(prep_data, function(x) n_distinct(x))
 
 
 # Data Exploration -------------------------------------------------------------
+sapply(prep_data, function(x) n_distinct(x))
 
 ## League/Country ----------------------------------
 table(prep_data$`League/Country`)
-# There is a issue that there are "Champions League" and "Europa League", while 
-#   most data are actually league. This problem can't clean more. 
+# There is a issue that there are "Champions League" and "Europa League", 
+#   while most data are actually league. This problem can't clean more. 
 #   Must noted before using.
 
+## BootsBrand ----------------------------------
+table(prep_data$BootsBrand)
+barplot(sort(table(prep_data$BootsBrand), decreasing=TRUE), 
+        main="Boots Brand",
+        xlab="Brand",
+        ylab="Count")
 
+## BootsType ----------------------------------
+table(prep_data$BootsType)
+barplot(sort(table(prep_data$BootsType), decreasing=TRUE), 
+        main="Boots Type",
+        xlab="Boots Type",
+        ylab="Count")
+
+## BootsPosition -----------------------------
+table(prep_data$BootsPosition)
+barplot(sort(table(prep_data$BootsPosition), decreasing=TRUE), 
+        main="Boots Position",
+        xlab="Boots Position",
+        ylab="Count")
+
+## PlayerPosition ---------------------------
+table(prep_data$PlayerPosition)
+barplot(sort(table(prep_data$PlayerPosition), decreasing=TRUE), 
+        main="Player Position",
+        xlab="Player Position",
+        ylab="Count")
+
+## PlayerMarketValue -----------------------
+hist(prep_data$PlayerMarketValue,
+     main="Histogram of Player Market Value",
+     xlab="Market Value (Million Euro)")
 
