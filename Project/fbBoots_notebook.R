@@ -5,6 +5,8 @@ library(tidyr)
 library(cluster)
 library(readr)
 library(ggplot2)
+library(cluster)
+library(fpc)
 
 # Data Preparation -------------------------------------------------------------
 fbBootDB <- read_csv('footballbootsdb.csv')
@@ -106,4 +108,87 @@ barplot(sort(table(prep_data$PlayerPosition), decreasing=TRUE),
 hist(prep_data$PlayerMarketValue,
      main="Histogram of Player Market Value",
      xlab="Market Value (Million Euro)")
+
+
+# Clustering -------------------------------------------------------------------
+
+## Dissimilarity Matrix -------------------------------------
+# using Gower distance for both categorical and numerical data
+gower_dist <- daisy(prep_data[,3:14], metric = c("gower"))
+
+## hclust ---------------------------------------------------
+hc_complete = hclust(gower_dist, method="complete")
+plot(hc_complete, main = "Agglomerative, complete linkages")
+hc_single = hclust(gower_dist, method="single")
+plot(hc_single, main = "Agglomerative, single linkages")
+hc_average = hclust(gower_dist, method="average")
+plot(hc_average, main = "Agglomerative, average linkages")
+# Single linkage is very unbalanced. 
+# Complete and average are quite balanced in the same level
+
+## No. of cluster Measurement -------------------------------
+# I think the suitable no. of cluster are 4-7. 
+# (more than 3 because there are 3 large brands)
+
+# This function from https://towardsdatascience.com/hierarchical-clustering-on-categorical-data-in-r-a27e578f2995 
+cstats.table <- function(dist, tree, k) {
+  clust.assess <- c("cluster.number","n","within.cluster.ss","average.within",
+                    "average.between","wb.ratio","dunn2","avg.silwidth")
+  clust.size <- c("cluster.size")
+  stats.names <- c()
+  row.clust <- c()
+  output.stats <- matrix(ncol = k, nrow = length(clust.assess))
+  cluster.sizes <- matrix(ncol = k, nrow = k)
+  for(i in c(1:k)){
+    row.clust[i] <- paste("Cluster-", i, " size")
+  }
+  for(i in c(2:k)){
+    stats.names[i] <- paste("Test", i-1)
+    for(j in seq_along(clust.assess)){
+      output.stats[j, i] <- unlist(cluster.stats(d = dist, clustering = cutree(tree, k = i))[clust.assess])[j]
+    }
+    for(d in 1:k) {
+      cluster.sizes[d, i] <- unlist(cluster.stats(d = dist, clustering = cutree(tree, k = i))[clust.size])[d]
+      dim(cluster.sizes[d, i]) <- c(length(cluster.sizes[i]), 1)
+      cluster.sizes[d, i]
+    }
+  }
+  output.stats.df <- data.frame(output.stats)
+  cluster.sizes <- data.frame(cluster.sizes)
+  cluster.sizes[is.na(cluster.sizes)] <- 0
+  rows.all <- c(clust.assess, row.clust)
+  # rownames(output.stats.df) <- clust.assess
+  output <- rbind(output.stats.df, cluster.sizes)[ ,-1]
+  colnames(output) <- stats.names[2:k]
+  rownames(output) <- rows.all
+  is.num <- sapply(output, is.numeric)
+  output[is.num] <- lapply(output[is.num], round, 2)
+  return(output)
+}
+
+stats_hc_c <- cstats.table(gower_dist, hc_complete, 7)
+stats_hc_c
+stats_hc_avg <- cstats.table(gower_dist, hc_average, 7)
+stats_hc_avg
+# See that complete linkage is more balance
+
+### Elbow ------------------------------------------------
+ggplot(data = data.frame(t(cstats.table(gower_dist, hc_complete, 15))), 
+       aes(x=cluster.number, y=within.cluster.ss)) + 
+  geom_point()+
+  geom_line()+
+  ggtitle("Agglomerative clustering") +
+  labs(x = "Num.of clusters", y = "Within clusters sum of squares (SS)") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+
+# Other Analysis ---------------------------------------------------------------
+# 1. German player/league use German Brand (Adidas and Puma) most?
+# 2. Relationship b/w  BootsType and PlayerPosition
+#    Example: Speed Boots for Wing/Attacker player?, Control for Midfield?
+# 3. Relationship b/w BootsBrand and BootsType: to see that 
+#    "Are Bootsbrands produced BootsType as Brand's character?"
+# 4. Relationship b/w BootsBrand and PlayerMarket
+#    "3 Large brands (NIKE, ADIDAS, PUMA) have different top players as partner"
 
