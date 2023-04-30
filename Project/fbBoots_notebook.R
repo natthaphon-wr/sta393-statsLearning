@@ -10,6 +10,7 @@ library(fpc)
 library(reshape2)
 library(purrr)
 library(dendextend)
+library(viridis)
 
 # Data Preparation -------------------------------------------------------------
 fbBootDB <- read_csv('footballbootsdb.csv')
@@ -37,6 +38,11 @@ prep_data <- fbBootDB[,1:14]
 colSums(is.na(prep_data))
 sapply(prep_data, function(x) n_distinct(x))
 summary(prep_data)
+
+## NA value in BootsBrand ---------------------------------
+prep_data[is.na(prep_data$BootsBrand),]
+# remove this row
+prep_data <- prep_data[!is.na(prep_data$BootsBrand),]
 
 ## Find all `null` value manually -------------------------------
 # null boots
@@ -68,6 +74,7 @@ prep_data <- prep_data %>% relocate(PlayerName, .after = RecordID)
 ## Conclude data preparation -------------------------------------
 summary(prep_data)
 sapply(prep_data, function(x) n_distinct(x))
+colSums(is.na(prep_data))
 
 
 # Data Exploration -------------------------------------------------------------
@@ -217,19 +224,11 @@ stats_hc_c
 
 ## Visualize Result --------------------------------------------------------
 cut_best <- cutree(hc_complete, 6)
-# plot(hc_complete, main="Complete Linkage", check=TRUE)
-# rect.hclust(hc_complete, k=6, border = 2:6)
-# abline(h=3, col = 'red')
 
 ### Dendrogram ----------------------------------------
 dendro_comp <- as.dendrogram(hc_complete)
 comp_col_dend <- color_branches(dendro_comp, k=6)
 plot(comp_col_dend, main="Dendrogram, k = 6")
-
-Boots_cluster <- mutate(prep_data, cluster=cut_best)
-count(Boots_cluster, cluster)
-Boots_cluster$cluster <- as.factor(Boots_cluster$cluster)
-summary(Boots_cluster)
 
 ### Dendrogram2 ----------------------------------------
 # dendro <- as.dendrogram(hc_complete)
@@ -248,19 +247,19 @@ summary(Boots_cluster)
 #   coord_polar(theta="x")
 
 ### Heatmap -----------------------------------------------
-clust.num <- cutree(hc_complete, k=6)
-prepData.cl <- cbind(prep_data, clust.num)
+# clust.num <- cutree(hc_complete, k=6)
+prepData.cl <- cbind(prep_data, cut_best)
 cust.long <- melt(data.frame(lapply(prepData.cl, as.character), stringsAsFactors=FALSE),
-                  id = c("RecordID", "clust.num"), factorsAsStrings=T)
+                  id = c("RecordID", "cut_best"), factorsAsStrings=T)
 cust.long.q <- cust.long %>%
-  group_by(clust.num, variable, value) %>%
+  group_by(cut_best, variable, value) %>%
   mutate(count = n_distinct(RecordID)) %>%
-  distinct(clust.num, variable, value, count)
+  distinct(cut_best, variable, value, count)
 cust.long.p <- cust.long.q %>%
-  group_by(clust.num, variable) %>%
+  group_by(cut_best, variable) %>%
   mutate(perc = count / sum(count)) %>%
-  arrange(clust.num)
-heatmap.p <- ggplot(cust.long.p, aes(x = clust.num, y = factor(value, ordered = T))) +
+  arrange(cut_best)
+heatmap.p <- ggplot(cust.long.p, aes(x = cut_best, y = factor(value, ordered = T))) +
   geom_tile(aes(fill = perc), alpha = 0.85) +
   labs(title = "Distribution of characteristics across clusters", x = "Cluster number", y = NULL) +
   geom_hline(yintercept = 3.5) +
@@ -268,25 +267,65 @@ heatmap.p <- ggplot(cust.long.p, aes(x = clust.num, y = factor(value, ordered = 
   geom_hline(yintercept = 13.5) +
   geom_hline(yintercept = 17.5) +
   geom_hline(yintercept = 21.5) +
-  scale_fill_gradient2(low = "darkslategray1", mid = "yellow", high = "turquoise4")
+  scale_fill_gradient2(low="chartreuse1", mid="burlywood1", high="cadetblue1")
 heatmap.p
 
 
 ### Plot each variable --------------------------------
 # Explore important variables.
+Boots_cluster <- mutate(prep_data, cluster=cut_best)
+count(Boots_cluster, cluster)
+Boots_cluster$cluster <- as.factor(Boots_cluster$cluster)
+summary(Boots_cluster)
+# colSums(is.na(Boots_cluster))
 
 ggplot(Boots_cluster, aes(x=1:dim(Boots_cluster)[1], y=PlayerMarketValue, color=cluster)) + 
   geom_point() +
   xlab("Data") +
   ggtitle("Boots Data with Clustering")
 
+table(Boots_cluster$BootsPosition, Boots_cluster$cluster)
 barplot(table(Boots_cluster$BootsPosition, Boots_cluster$cluster),
-        beside=TRUE,
+        col = viridis(4),
+        ylim = c(0, 2000),
+        beside = TRUE,
         legend.text = TRUE,
-        main="BootsPosition with Clustering",
-        xlab="Cluster",
-        ylab="Count")
+        main = "BootsPosition with Clustering",
+        xlab ="Cluster",
+        ylab = "Count")
 
+table(Boots_cluster$BootsType, Boots_cluster$cluster)
+barplot(table(Boots_cluster$BootsType, Boots_cluster$cluster),
+        col = viridis(9),
+        ylim = c(0, 2000),
+        beside = TRUE,
+        legend.text = TRUE,
+        args.legend = list("topright", cex=0.75),
+        main = "BootsType with Clustering",
+        xlab = "Cluster",
+        ylab = "Count")
+
+table(Boots_cluster$BootsBrand, Boots_cluster$cluster)
+barplot(table(Boots_cluster$BootsBrand, Boots_cluster$cluster),
+        col = viridis(13),
+        ylim = c(0, 1200),
+        beside = TRUE,
+        legend.text = TRUE,
+        args.legend = list(x="topright", cex=0.5, inset=c(-0.02, -0.1)),
+        main = "BootsBrand with Clustering",
+        xlab = "Cluster",
+        ylab = "Count")
+
+table(Boots_cluster$PlayerPosition, Boots_cluster$cluster)
+barplot(table(Boots_cluster$PlayerPosition, Boots_cluster$cluster),
+        col = viridis(13),
+        ylim = c(0, 400),
+        beside = TRUE,
+        legend.text = TRUE,
+        args.legend = list(x="topright", cex=0.5),
+        main = "PlayerPosition with Clustering",
+        xlab = "Cluster",
+        ylab = "Count")
 
 
 # Other Analysis ---------------------------------------------------------------
@@ -297,4 +336,27 @@ barplot(table(Boots_cluster$BootsPosition, Boots_cluster$cluster),
 #    "Are Bootsbrands produced BootsType as Brand's character?"
 # 4. Relationship b/w BootsBrand and PlayerMarket
 #    "3 Large brands (NIKE, ADIDAS, PUMA) have different top players as partner"
+
+## Analysis 1 -------------------------------------------------------
+print(count(Boots_cluster, Boots_cluster$`League/Country`), n=26)
+bundes_data <- Boots_cluster[Boots_cluster$`League/Country` == c("Bundesliga"),]
+
+bundes_brand <- bundes_data %>% group_by(BootsBrand) %>% summarise(ratio=n()/dim(bundes_data)[1])
+ggplot(data=bundes_brand, aes(x=reorder(BootsBrand, -ratio), y=ratio)) +
+  geom_bar(stat="identity") +
+  xlab("BootsBrand") +
+  ylab("Ratio") +
+  ggtitle("BootsBrand in Bundesliga") +
+  geom_text(aes(label=round(ratio,2)), vjust = -0.2,)
+
+total_brand <- Boots_cluster %>% group_by(BootsBrand) %>% summarise(ratio=n()/dim(Boots_cluster)[1])
+ggplot(data=total_brand, aes(x=reorder(BootsBrand, -ratio), y=ratio)) +
+  geom_bar(stat="identity") +
+  xlab("BootsBrand") +
+  ylab("Ratio") +
+  ggtitle("BootsBrand in Total Data") +
+  geom_text(aes(label=round(ratio,2)), vjust = -0.2,)
+
+## Analysis 2 --------------------------------------------------------
+
 
