@@ -89,6 +89,7 @@ table(prep_data$`League/Country`)
 ## BootsBrand ----------------------------------
 table(prep_data$BootsBrand)
 barplot(sort(table(prep_data$BootsBrand), decreasing=TRUE), 
+        las=2,
         main="Boots Brand",
         xlab="Brand",
         ylab="Count")
