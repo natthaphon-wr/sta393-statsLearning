@@ -5,6 +5,10 @@ library(randomForest)
 library(caret)
 library(readr)
 library(plyr)
+library(gbm)
+library(xgboost)
+library(archdata)
+library(Ckmeans.1d.dp)
 
 # Data Preparation -------------------------------------------------------------
 BankChurners <- read_csv("BankChurners.csv")
@@ -59,3 +63,108 @@ for(j in 1:k){
 rmse_rf <- sqrt(mean(cvv))
 
 
+# Boosting ---------------------------------------------------------------------
+## Default Parameters -----------------------------------------
+cv.rmse.boost = 1:k
+for(j in 1:k){
+  boost = gbm(Total_Revolving_Bal~., data=BankChurners[folds!=j,], 
+              distribution="gaussian", n.trees=50)
+  cv.rmse.boost[j] = mean((BankChurners$Total_Revolving_Bal[folds==j]-
+                             predict(boost, newdata=BankChurners[folds==j,], n.trees=50))^2)
+}
+rmse_boostDef <- sqrt(mean(cv.rmse.boost))
+
+# I will not tuning parameters of Boosting because
+#   1. The difference of RMSE from RF and Boosting is very much, so I don't think 
+#      can tune parameter to perform better than RF.
+#   2. It's use lots of time to build and tune model.
+
+
+# XGBoost ----------------------------------------------------------------------
+## Data Preparation -------------------------------------------
+summary(BankChurners)
+BankChurners_xgb <- BankChurners
+
+# Convert categorical to numerical
+# Attrition_Flag, Gender, Education_Level, Income_Category, Marital_Status, Card_Category
+#   1. Convert Attrition_Flag, Gender to numeric now (only 2 options)
+#   2. Reorder factor level of Education_Level, Income_Category, then convert to numerical
+#   3. Not use Marital_Status, Card_Category because can't convert appropriate factor level
+
+#1
+BankChurners_xgb$Attrition_Flag = as.numeric(BankChurners_xgb$Attrition_Flag)
+BankChurners_xgb$Gender = as.numeric(BankChurners_xgb$Gender)
+
+#2
+levels(BankChurners_xgb$Education_Level)
+BankChurners_xgb$Education_Level <- factor(BankChurners_xgb$Education_Level, 
+                                           levels=c('Uneducated', 'High School', 'College', 
+                                                    'Graduate', 'Post-Graduate', 'Doctorate'))
+levels(BankChurners_xgb$Income_Category)
+BankChurners_xgb$Income_Category <- factor(BankChurners_xgb$Income_Category, 
+                                           levels=c('Less than $40K', '$40K - $60K', '$60K - $80K',
+                                                    '$80K - $120K', '$120K +'))
+BankChurners_xgb$Education_Level = as.numeric(BankChurners_xgb$Education_Level)
+BankChurners_xgb$Income_Category = as.numeric(BankChurners_xgb$Income_Category)
+
+#3
+BankChurners_xgb <- BankChurners_xgb %>% select(where(is.numeric))
+summary(BankChurners_xgb)
+
+# data_variables <- as.matrix(Auto_xgb[,-ncol(Auto_xgb)])
+# data_label <- Auto_xgb[,ncol(Auto_xgb)]
+# data_matrix <- xgb.DMatrix(data = as.matrix(data_variables), label = data_label)
+
+data_variables <- as.matrix(BankChurners_xgb[,-ncol(BankChurners_xgb)])
+data_label <- BankChurners_xgb[,ncol(BankChurners_xgb)]
+data_matrix <- xgb.DMatrix(data = as.matrix(data_variables), label=data_label$Total_Revolving_Bal)
+
+## Default Parameters -----------------------------------------
+# eta = 0.3
+# max_depth = 6
+# min_child_weight = 1
+# subsample = 1
+
+xgb_params <- list("objective" = "reg:squarederror",
+                   "eval_metric" = "rmse")
+nround <- 20
+cv.rmse.xgboost = 1:k
+for (j in 1:k){
+  # split train data and make xgb.DMatrix
+  train_data   <- data_variables[folds!=j,]
+  train_label  <- data_label$Total_Revolving_Bal[folds!=j]
+  train_matrix <- xgb.DMatrix(data = train_data, label = train_label)
+  
+  # split test data and make xgb.DMatrix
+  test_data  <- data_variables[folds==j,]
+  test_label <- data_label$Total_Revolving_Bal[folds==j]
+  test_matrix <- xgb.DMatrix(data = test_data, label = test_label)
+  
+  # train model
+  bst_model <- xgb.train(params = xgb_params,
+                         data = train_matrix,
+                         nrounds = nround)
+  
+  # Predict hold-out test set
+  test_pred <- predict(bst_model, newdata = test_matrix)
+  cv.rmse.xgboost[j] = sqrt(mean((test_label-test_pred)^2))
+}
+
+rmse_xgboostDef <- mean(cv.rmse.xgboost)
+
+# The best RMSE is from XGBoost method. I will not tuning parameters because
+#   1. This RMSE is very better than others.
+#   2. It's use lots of time to build and tune model.
+
+### Feature Importance ---------------------
+train_data   <- data_variables
+train_label  <- data_label$Total_Revolving_Bal
+train_matrix <- xgb.DMatrix(data = train_data, label = train_label)
+bst_model <- xgb.train(params = xgb_params,
+                       data = train_matrix,
+                       nrounds = nround)
+
+names <- colnames(BankChurners_xgb[,-ncol(BankChurners_xgb)])
+importance_matrix = xgb.importance(feature_names = names, model = bst_model)
+gp = xgb.ggplot.importance(importance_matrix)
+print(gp) 

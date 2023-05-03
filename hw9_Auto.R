@@ -216,7 +216,3 @@ names <- colnames(Auto_xgb[,-ncol(Auto_xgb)])
 importance_matrix = xgb.importance(feature_names = names, model = bst_model)
 gp = xgb.ggplot.importance(importance_matrix)
 print(gp) 
-
-
-
-
