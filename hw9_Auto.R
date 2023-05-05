@@ -34,9 +34,9 @@ for(j in 1:k){
   cv.mse.prune[j] = mean((Auto$mpg[folds==j] - predict(prTree, newdata=Auto[folds==j,]))^2)
 }
 rmse_prTree <- sqrt(mean(cv.mse.prune))
-# summary(auto_prTree)
-# plot(auto_prTree)
-# text(auto_prTree, pretty = 0)
+# summary(prTree)
+# plot(prTree)
+# text(prTree, pretty = 0)
 
 
 # Random Forest ----------------------------------------------------------------

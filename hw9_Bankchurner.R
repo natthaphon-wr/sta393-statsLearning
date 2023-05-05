@@ -45,9 +45,9 @@ for(j in 1:k){
                             predict(prTree, newdata=BankChurners[folds==j,]))^2)
 }
 rmse_prTree <- sqrt(mean(cv.mse.prune))
-summary(prTree)
-plot(prTree)
-text(prTree, pretty = 0)
+# summary(prTree)
+# plot(prTree)
+# text(prTree, pretty = 0)
 
 
 # Random Forest ----------------------------------------------------------------
