@@ -11,6 +11,9 @@ library(reshape2)
 library(purrr)
 library(dendextend)
 library(viridis)
+library(grid)
+library(gridExtra)
+library(stats)
 
 # Data Preparation -------------------------------------------------------------
 fbBootDB <- read_csv('footballbootsdb.csv')
@@ -89,7 +92,8 @@ table(prep_data$`League/Country`)
 ## BootsBrand ----------------------------------
 table(prep_data$BootsBrand)
 barplot(sort(table(prep_data$BootsBrand), decreasing=TRUE), 
-        las=2,
+        las = 2,
+        cex.names = 0.6,
         main="Boots Brand",
         xlab="Brand",
         ylab="Count")
@@ -97,6 +101,8 @@ barplot(sort(table(prep_data$BootsBrand), decreasing=TRUE),
 ## BootsType ----------------------------------
 table(prep_data$BootsType)
 barplot(sort(table(prep_data$BootsType), decreasing=TRUE), 
+        las = 2,
+        cex.names = 0.6,
         main="Boots Type",
         xlab="Boots Type",
         ylab="Count")
@@ -111,6 +117,8 @@ barplot(sort(table(prep_data$BootsPosition), decreasing=TRUE),
 ## PlayerPosition ---------------------------
 table(prep_data$PlayerPosition)
 barplot(sort(table(prep_data$PlayerPosition), decreasing=TRUE), 
+        las = 2,
+        cex.names = 0.5,
         main="Player Position",
         xlab="Player Position",
         ylab="Count")
@@ -339,15 +347,18 @@ barplot(table(Boots_cluster$PlayerPosition, Boots_cluster$cluster),
 #    "3 Large brands (NIKE, ADIDAS, PUMA) have different top players as partner"
 
 ## Analysis 1 -------------------------------------------------------
-print(count(Boots_cluster, Boots_cluster$`League/Country`), n=26)
-bundes_data <- Boots_cluster[Boots_cluster$`League/Country` == c("Bundesliga"),]
+sum(Boots_cluster$`League/Country`==c("Bundesliga"))
+sum(Boots_cluster$PlayerNationality==c("Germany"))
 
-bundes_brand <- bundes_data %>% group_by(BootsBrand) %>% summarise(ratio=n()/dim(bundes_data)[1])
-ggplot(data=bundes_brand, aes(x=reorder(BootsBrand, -ratio), y=ratio)) +
+german_data <- Boots_cluster[Boots_cluster$`League/Country`==c("Bundesliga") |
+                               Boots_cluster$PlayerNationality==c("Germany"),]
+
+german_brand <- german_data %>% group_by(BootsBrand) %>% summarise(ratio=n()/dim(german_data)[1])
+ggplot(data=german_brand, aes(x=reorder(BootsBrand, -ratio), y=ratio)) +
   geom_bar(stat="identity") +
   xlab("BootsBrand") +
   ylab("Ratio") +
-  ggtitle("BootsBrand in Bundesliga") +
+  ggtitle("BootsBrand in Bundesliga and German Player") +
   geom_text(aes(label=round(ratio,2)), vjust = -0.2,)
 
 total_brand <- Boots_cluster %>% group_by(BootsBrand) %>% summarise(ratio=n()/dim(Boots_cluster)[1])
@@ -359,5 +370,28 @@ ggplot(data=total_brand, aes(x=reorder(BootsBrand, -ratio), y=ratio)) +
   geom_text(aes(label=round(ratio,2)), vjust = -0.2,)
 
 ## Analysis 2 --------------------------------------------------------
+# Relationship b/w  BootsType and PlayerPosition
+table(Boots_cluster$PlayerPosition, Boots_cluster$BootsType)
+grid.table(table(Boots_cluster$PlayerPosition, Boots_cluster$BootsType))
+
+chisq.test(Boots_cluster$PlayerPosition, Boots_cluster$BootsType)
+# Warning because there are many values are very small, so chi-squared may be poor.
+# Not follow chi-square test assumption.
+
+# Using monte carlo test
+chisq.test(Boots_cluster$PlayerPosition, Boots_cluster$BootsType, simulate.p.value = TRUE)
+# p-value = 0.0004998, so reject null hypothesis
+# There is significant related between PlayerPosition and BootsType
+
+## Analysis 3 -------------------------------------------------------
+# Relationship b/w BootsBrand and BootsType
+
+
+
+
+## Analysis 4 -------------------------------------------------------
+# Relationship b/w BootsBrand and PlayerMarket
+
+
 
 
