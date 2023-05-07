@@ -369,6 +369,9 @@ ggplot(data=total_brand, aes(x=reorder(BootsBrand, -ratio), y=ratio)) +
   ggtitle("BootsBrand in Total Data") +
   geom_text(aes(label=round(ratio,2)), vjust = -0.2,)
 
+# There is not different b/w German player/league and others.
+# German player/league are not use Adidas or Puma significant different.
+
 ## Analysis 2 --------------------------------------------------------
 # Relationship b/w  BootsType and PlayerPosition
 table(Boots_cluster$PlayerPosition, Boots_cluster$BootsType)
@@ -378,20 +381,35 @@ chisq.test(Boots_cluster$PlayerPosition, Boots_cluster$BootsType)
 # Warning because there are many values are very small, so chi-squared may be poor.
 # Not follow chi-square test assumption.
 
-# Using monte carlo test
+# Using Monte Carlo test
 chisq.test(Boots_cluster$PlayerPosition, Boots_cluster$BootsType, simulate.p.value = TRUE)
-# p-value = 0.0004998, so reject null hypothesis
+# p-value = 0.0004998 (<0.05), so reject null hypothesis
 # There is significant related between PlayerPosition and BootsType
 
 ## Analysis 3 -------------------------------------------------------
 # Relationship b/w BootsBrand and BootsType
+table(Boots_cluster$BootsBrand, Boots_cluster$BootsType)
+grid.table(table(Boots_cluster$BootsBrand, Boots_cluster$BootsType))
 
-
-
+# Using Monte Carlo test
+chisq.test(Boots_cluster$BootsBrand, Boots_cluster$BootsType, simulate.p.value = TRUE)
+# p-value = 0.0004998 (<0.05), so reject null hypothesis
+# There is significant related between PlayerPosition and BootsType
 
 ## Analysis 4 -------------------------------------------------------
 # Relationship b/w BootsBrand and PlayerMarket
+nike_data <- Boots_cluster[Boots_cluster$BootsBrand ==c("Nike"),]
+adidas_data <- Boots_cluster[Boots_cluster$BootsBrand ==c("adidas"),]
+puma_data <- Boots_cluster[Boots_cluster$BootsBrand ==c("Puma"),]
 
+ggplot(nike_data, aes(x = BootsBrand, y = PlayerMarketValue)) +
+  geom_boxplot (aes(fill=BootsBrand), outlier.size = 1) +
+  geom_boxplot(data=adidas_data, aes(x=BootsBrand, y=PlayerMarketValue, fill=BootsBrand)) +
+  geom_boxplot(data=puma_data, aes(x=BootsBrand, y=PlayerMarketValue, fill=BootsBrand)) +
+  stat_summary(fun.y=mean, colour="red", geom="point") +
+  stat_summary(data=adidas_data, fun.y=mean, colour="red", geom="point") +
+  stat_summary(data=puma_data, fun.y=mean, colour="red", geom="point")
 
-
-
+# Overall, the distribution of PlayerMarketValue are quite same, 
+#   but Nike have outlier that are 2 most value. (Kylian Mbappé, Erling Haaland) 
+  
