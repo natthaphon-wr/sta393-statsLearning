@@ -54,6 +54,11 @@ prep_data <- prep_data[!prep_data$BootsName=='null',]
 # There are still some columns that are null, but it's understandable that
 #   there aren't information for those boots or they haven't specific function.
 
+dim(prep_data[prep_data$BootsMaterial=='null',])[1]
+dim(prep_data[prep_data$BootsPack=='null',])[1]
+dim(prep_data[prep_data$BootsPosition=='null',])[1]
+dim(prep_data[prep_data$PlayerNationality=='null',])[1]
+
 
 ## Define Type of Data -----------------------------------------------
 summary(prep_data)
@@ -93,6 +98,7 @@ table(prep_data$`League/Country`)
 table(prep_data$BootsBrand)
 barplot(sort(table(prep_data$BootsBrand), decreasing=TRUE), 
         las = 2,
+        ylim = c(0,2000),
         cex.names = 0.6,
         main="Boots Brand",
         xlab="Brand",
@@ -102,6 +108,7 @@ barplot(sort(table(prep_data$BootsBrand), decreasing=TRUE),
 table(prep_data$BootsType)
 barplot(sort(table(prep_data$BootsType), decreasing=TRUE), 
         las = 2,
+        ylim = c(0,2500),
         cex.names = 0.6,
         main="Boots Type",
         xlab="Boots Type",
@@ -110,6 +117,7 @@ barplot(sort(table(prep_data$BootsType), decreasing=TRUE),
 ## BootsPosition -----------------------------
 table(prep_data$BootsPosition)
 barplot(sort(table(prep_data$BootsPosition), decreasing=TRUE), 
+        ylim = c(0, 2500),
         main="Boots Position",
         xlab="Boots Position",
         ylab="Count")
@@ -118,6 +126,7 @@ barplot(sort(table(prep_data$BootsPosition), decreasing=TRUE),
 table(prep_data$PlayerPosition)
 barplot(sort(table(prep_data$PlayerPosition), decreasing=TRUE), 
         las = 2,
+        ylim = c(0,800),
         cex.names = 0.5,
         main="Player Position",
         xlab="Player Position",
@@ -125,6 +134,7 @@ barplot(sort(table(prep_data$PlayerPosition), decreasing=TRUE),
 
 ## PlayerMarketValue -----------------------
 hist(prep_data$PlayerMarketValue,
+     ylim=c(0, 3500),
      main="Histogram of Player Market Value",
      xlab="Market Value (Million Euro)")
 
