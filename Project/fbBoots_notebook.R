@@ -403,7 +403,7 @@ adidas_data <- Boots_cluster[Boots_cluster$BootsBrand ==c("adidas"),]
 puma_data <- Boots_cluster[Boots_cluster$BootsBrand ==c("Puma"),]
 
 ggplot(nike_data, aes(x = BootsBrand, y = PlayerMarketValue)) +
-  geom_boxplot (aes(fill=BootsBrand), outlier.size = 1) +
+  geom_boxplot (aes(fill=BootsBrand)) +
   geom_boxplot(data=adidas_data, aes(x=BootsBrand, y=PlayerMarketValue, fill=BootsBrand)) +
   geom_boxplot(data=puma_data, aes(x=BootsBrand, y=PlayerMarketValue, fill=BootsBrand)) +
   stat_summary(fun.y=mean, colour="red", geom="point") +
