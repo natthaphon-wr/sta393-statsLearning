@@ -387,12 +387,13 @@ ggplot(data=total_brand, aes(x=reorder(BootsBrand, -ratio), y=ratio)) +
 table(Boots_cluster$PlayerPosition, Boots_cluster$BootsType)
 grid.table(table(Boots_cluster$PlayerPosition, Boots_cluster$BootsType))
 
-chisq.test(Boots_cluster$PlayerPosition, Boots_cluster$BootsType)
+chisq2 <- chisq.test(Boots_cluster$PlayerPosition, Boots_cluster$BootsType)
 # Warning because there are many values are very small, so chi-squared may be poor.
 # Not follow chi-square test assumption.
 
 # Using Monte Carlo test
-chisq.test(Boots_cluster$PlayerPosition, Boots_cluster$BootsType, simulate.p.value = TRUE)
+chisq2_monte <- chisq.test(Boots_cluster$PlayerPosition, Boots_cluster$BootsType, simulate.p.value = TRUE)
+grid.table(round(chisq2_monte$stdres,2))
 # p-value = 0.0004998 (<0.05), so reject null hypothesis
 # There is significant related between PlayerPosition and BootsType
 
@@ -402,7 +403,8 @@ table(Boots_cluster$BootsBrand, Boots_cluster$BootsType)
 grid.table(table(Boots_cluster$BootsBrand, Boots_cluster$BootsType))
 
 # Using Monte Carlo test
-chisq.test(Boots_cluster$BootsBrand, Boots_cluster$BootsType, simulate.p.value = TRUE)
+chisq3_monte <- chisq.test(Boots_cluster$BootsBrand, Boots_cluster$BootsType, simulate.p.value = TRUE)
+grid.table(round(chisq3_monte$stdres,2))
 # p-value = 0.0004998 (<0.05), so reject null hypothesis
 # There is significant related between PlayerPosition and BootsType
 
